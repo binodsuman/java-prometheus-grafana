@@ -1,0 +1,147 @@
+start.spring.io
+
+Java Maven project -> Add dependency
+    1. Spring Web
+    2. spring Actuator
+    3. Prometheus
+
+Artifact Name: Grafana_Demo
+Jar -> 17
+
+Open project in Intellig
+
+run the application
+Open chrome Browser
+http://localhost:8080/actuator
+
+http://localhost:8080/actuator/prometheus -> Not working
+
+fix:
+Add below line in application.properties
+management.endpoints.web.exposure.include=prometheus
+
+http://localhost:8080/actuator/prometheus
+Check -> memory, cpu, disk, heap
+
+Create new controller with @RestController
+
+private Counter visitCounter;
+
+    SimpleController(MeterRegistry registry){
+       // this.visitCounter = registry.counter("visitor-demo-counter");
+        this.visitCounter =  Counter.builder("demo_visit_counter")
+                .tags("demo-counter-tage","Number_Visitors")
+                .description("Number of visitors on this api/website")
+                .register(registry);
+    }
+
+    @GetMapping("visitor")
+    public String visitorCount(){
+        visitCounter.increment();
+        return "Visitor Counter : "+visitCounter.count();
+    }
+
+Re-run and search 'demo_visit_counter' in http://localhost:8080/actuator/prometheus
+
+Now install Prometheus
+
+1. Go to https://prometheus.io/download/
+2. Choose darwin as your Operating System and arm64 as your Architecture.
+3. prometheus-2.53.3.darwin-amd64.tar
+4. Double click to unzip
+5. Open terminal
+6. Go to that folder (/Users/binod/Documents/software/prometheus-2.55.1.darwin-amd64)
+7. ./prometheus 
+
+
+Check:
+
+http://localhost:9090
+
+Open prmetheus.yml and add at below:
+
+- job_name: 'spring-actuator-Binod'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+    static_configs:
+        - targets: ['localhost:8080']
+
+
+and restart prometheus
+
+From sring boot website, search 'demo_visit_counter_total'
+copy paste in Prometheus in search bar
+demo_visit_counter_total and hit button Exeucte
+you can check in Graph 
+
+hit http://localhost:8080/visitor and incrase the visitor Number
+and check agian in prometheus
+
+Show all below three metrics:
+
+@GetMapping("queue")
+    public String queue(){
+        queue.add(new Random().nextInt(100)+1);
+        return "Gauge demo, Queue size :"+queue.size();
+    }
+
+    @GetMapping("queueremove")
+    public String queueRemove(){
+        if(queue.size() > 0){
+            queue.remove(0);
+        }
+        return "Gauge demo, Queue size :"+queue.size();
+    }
+
+
+    @GetMapping("histogram")
+    public String histrogramDemo() throws InterruptedException {
+        long start = System.currentTimeMillis();
+        Thread.sleep(new Random().nextInt(1000)+1);
+        long duration = System.currentTimeMillis() - start;
+        httpRequestsDurationHistogram.record(duration);
+        return "Histogram Demo : "+duration;
+    }
+
+
+  Now Grafana installation
+   https://grafana.com/grafana/download?platform=mac
+
+
+curl -O https://dl.grafana.com/enterprise/release/grafana-enterprise-11.3.0.darwin-amd64.tar.gz
+tar -zxvf grafana-enterprise-11.3.0.darwin-amd64.tar.gz
+
+cd grafana-v11.3.0/bin (/Users/binod/Documents/software/grafana-v11.3.0/bin)
+> ./grafana-server
+
+Open Chrome (Safari not work)
+localhsot:3000
+admin
+admin
+
+Add datasource in Grafana through grafana dashboard
+Left side -> Connections -> Data Source -> Add data Source -> 
+click on prometheus -> Enter URL: http://localhost:9090
+come down the page and click on save and test.
+
+
+left side -> Dashboard -> create new
+paste 'demo_visit_counter_total' in Metric and hit 'Run quires' button.
+
+ Add 'Queue_Size_demo'
+
+ Google search 'Queue_Size_demo'
+ Hit Grafana dashboards | Grafana Labs
+ come bit down and search 'Spring' and click Spring Boot 2.1 System Monitor
+ click on Cope ID to clipboard
+
+ 
+
+
+
+
+
+
+
+
+
